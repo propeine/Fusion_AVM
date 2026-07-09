@@ -1,0 +1,8 @@
+{
+    "autodeskProduct": "Fusion360",
+    "type": "script",
+    "author": "AVM",
+    "description": {"": "Delete AVM clones with empty toolpaths after regen. Report-first, never touches non-AVM ops or the SWEEP."},
+    "supportedOS": "windows|mac",
+    "editEnabled": true
+}
