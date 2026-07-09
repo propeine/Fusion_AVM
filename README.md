@@ -82,4 +82,5 @@ AVM_Prune to delete empty bands → sim A/B → post.
 
 ## License
 
-TBD by the author.
+Apache-2.0. Attribution rides along via NOTICE; explicit patent grant
+and retaliation clause included. See LICENSE.

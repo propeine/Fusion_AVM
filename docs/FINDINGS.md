@@ -11,6 +11,13 @@ and is not (well) documented. Each cost at least one broken run.
   **Read `tool_feedPerTooth` directly instead** — it's in consistent
   length units. Sanity-guard every unit read; a wrong unit presents as
   the solver "derating everything," not as an error.
+- The **Machining Time dialog reports feed/rapid distance in millimeters
+  labeled with document units** (e.g. "9340.563 in" on a program whose
+  true feed distance is ~368 in = 9340 mm). Sanity check: distance /
+  programmed feed must roughly equal displayed feed time; off by ~25.4x
+  means you're reading mm. Percentage comparisons between programs are
+  unaffected (units cancel). Caught 2026-07-09 by smell: 10,000 inches
+  at 88 ipm cannot finish in five minutes.
 
 ## Operation duplication
 - `op.createTemplate()` does not exist. `operations.duplicate(op)` does
