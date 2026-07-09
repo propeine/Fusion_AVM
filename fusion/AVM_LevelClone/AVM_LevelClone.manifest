@@ -1,0 +1,8 @@
+{
+    "autodeskProduct": "Fusion360",
+    "type": "script",
+    "author": "AVM",
+    "description": {"": "Split selected adaptive op into per-level clones with physics-computed optimal loads. Original op untouched."},
+    "supportedOS": "windows|mac",
+    "editEnabled": true
+}

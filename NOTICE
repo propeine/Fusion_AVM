@@ -1,0 +1,11 @@
+AVM — Adaptive Volume Mode
+Copyright 2026 Tom Demitras
+
+Constant-tool-load per-level optimization for Fusion 360 adaptive
+clearing. Developed by Tom Demitras — machining physics validation,
+empirical CAM behavior discovery (minimumAxialEngagement level
+selection, FAD interaction), and instrumented cut verification — in
+collaboration with Claude (Anthropic) — physics modeling, solver, and
+Fusion API implementation.
+
+First validated cut: 2026-07-08, Delrin, Haas Mini Mill.

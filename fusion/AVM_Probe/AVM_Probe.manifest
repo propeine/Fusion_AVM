@@ -1,0 +1,10 @@
+{
+    "autodeskProduct": "Fusion360",
+    "type": "script",
+    "author": "AVM",
+    "description": {
+        "": "Dump CAM operation parameters + tool geometry to a text file. Select an operation first, or run with nothing selected to probe all ops."
+    },
+    "supportedOS": "windows|mac",
+    "editEnabled": true
+}
