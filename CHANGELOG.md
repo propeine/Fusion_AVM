@@ -20,6 +20,11 @@
 - v0.18 Level banding + clone cap (80-level grid explosion), dialog knobs
 - v0.19 Base-relative banding (transitive collapse fix), no-op detection
 - Prune utility: delete empty bands post-regen, report-first
+- v0.20 Per-level RPM thermal derating (forum-requested, Practical
+  Machinist thread): duty-factor interpolation between the source op's
+  proven WOC (0%) and the widest clone (entered %), feed rescaled per
+  clone's OWN fz (preserves solver fz raises), dormant at 0%.
+  avm_physics/derate.py + 13 invariant tests.
 
 Validated same day: 15.8% sim (in-scope), 13.5% sim (out-of-scope),
 4.5% wall clock on a rapid-hostile 2001 Haas, ~0.19 kW cutting power

@@ -1,4 +1,4 @@
-"""AVM Level Cloner v0.19 — split selected adaptive op(s) into per-level
+"""AVM Level Cloner v0.20 — split selected adaptive op(s) into per-level
 clones with physics-computed optimal loads.
 
 Run as a Fusion Script. SELECT one or more adaptive operations first
@@ -45,6 +45,7 @@ for _m in list(sys.modules):
 from avm_physics.beam import standard_endmill
 from avm_physics.cutting import CutGeometry, MATERIALS
 from avm_physics.solver import solve_levels, Limits, band_levels
+from avm_physics.derate import solve_derates
 
 # ------------------------ CONFIG (dialog defaults) ---------------------
 MATERIAL = "DELRIN"          # key into physics.cutting.MATERIALS
@@ -335,6 +336,7 @@ def build_cfg_from_inputs(inputs):
         "force": inputs.itemById("force").value,
         "max_bands": max(2, int(inputs.itemById("maxbands").value)),
         "min_ae_ratio": 1.0 + inputs.itemById("mindelta").value / 100.0,
+        "derate_pct": max(0.0, inputs.itemById("deratepct").value),
     }
 
 
@@ -378,6 +380,9 @@ class AVMCommandCreated(adsk.core.CommandCreatedEventHandler):
                                      "check)", True, "", False)
             inputs.addValueInput("maxbands", "Max level clones", "",
                                  adsk.core.ValueInput.createByReal(12))
+            inputs.addValueInput("deratepct", "RPM derate at max "
+                                 "engagement (%)",
+                                 "", adsk.core.ValueInput.createByReal(0.0))
             inputs.addValueInput("mindelta", "Merge levels within (% ae)",
                                  "",
                                  adsk.core.ValueInput.createByReal(15.0))
@@ -660,6 +665,8 @@ def process_op(app, ui, op, all_lines, cfg):
         # the source (empirical), so we create in REVERSE — sweep first,
         # then shallowest->deepest — and the tree lands deep-first with
         # the sweep at the bottom. Tree order = execution order.
+        derate_targets = []   # (clone, woc, current_feed) for RPM derate
+
         # SWEEP clone: FAD on, min axial 0, rest machining — catches the
         # floor slivers the FAD-off level clones leave between grid levels.
         # Tiny-ap leftovers are the ideal wide-load cut: use the
@@ -679,6 +686,8 @@ def process_op(app, ui, op, all_lines, cfg):
                          f"{new_fz * rpm * flutes:.1f} in/min")
             sweep.name = f"{tag} SWEEP ae{shallow.ae_in:.3f} (floor parity)"
             made.append(sweep)
+            derate_targets.append((sweep, shallow.ae_in,
+                                   shallow.fz_in * rpm * flutes))
             report.append(f"SWEEP: ae={shallow.ae_in:.4f} "
                           f"fz={shallow.fz_in:.5f} FAD=on minAxial=0")
         except Exception as e:
@@ -753,6 +762,8 @@ def process_op(app, ui, op, all_lines, cfg):
                     else f"L{r.span[0]}-{r.span[1]}")
             clone.name = (f"{tag} B{r.level} {span} z-{r.ap_in:.3f} "
                           f"ae{r.ae_in:.3f} ({r.binding})")
+            derate_targets.append((clone, r.ae_in,
+                                   r.fz_in * rpm * flutes))
             made.append(clone)
             report.append(f"  L{r.level} clone total {time.time()-t_op:.1f}s")
             report.append(
@@ -782,6 +793,30 @@ def process_op(app, ui, op, all_lines, cfg):
                     cam_obj.generateToolpath(c)
                 except Exception as e:
                     report.append(f"!! regen failed on {c.name}: {e}")
+
+        # RPM DERATE post-pass (thermal, forum-requested). Dormant at 0%.
+        # Anchors: source op's proven WOC -> 0%; widest clone -> entered %.
+        # Interpolates on duty factor. feed_scale applies to each clone's
+        # OWN feed, preserving solver fz raises (L10/SWEEP). Pure
+        # post-pass: touches only spindle speed + cutting feed.
+        if cfg.get("derate_pct", 0.0) > 0.0 and derate_targets:
+            ders = solve_derates([w for _, w, _ in derate_targets], D,
+                                 ae0, rpm, cfg["derate_pct"])
+            report.append(f"derate: {cfg['derate_pct']:.0f}% at widest "
+                          f"(ae {max(w for _, w, _ in derate_targets):.4f}), "
+                          f"anchored to ref ae {ae0:.4f} @ {rpm:.0f} rpm")
+            for (cl, w, feed_now), res in zip(derate_targets, ders):
+                if res.derate_frac <= 0.0:
+                    continue           # reference-and-narrower: untouched
+                dp = cl.parameters     # fresh fetch — proxy staleness
+                set_expr(dp, "tool_spindleSpeed", f"{res.rpm}")
+                set_expr(dp, "tool_feedCutting",
+                         f"{feed_now * res.feed_scale:.1f} in/min")
+                report.append(f"  {cl.name.split('] ')[-1]}: "
+                              f"-{100*res.derate_frac:.1f}% -> "
+                              f"{res.rpm} rpm, "
+                              f"{feed_now * res.feed_scale:.0f} ipm "
+                              f"(fz held)")
 
         # ORDER VERIFICATION: read back actual tree positions of our ops
         try:

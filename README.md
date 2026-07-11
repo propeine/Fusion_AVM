@@ -58,6 +58,20 @@ AVM_Prune to delete empty bands → sim A/B → post.
 **Run on a file copy.** Regen cost ≈ source op regen × band count
 (serial: rest-machining bands depend on their predecessors).
 
+## RPM derating (thermal, optional)
+
+For heat-limited materials (Ti, stainless, Inconel): one dialog field,
+`RPM derate at max engagement (%)`, default 0 = off. The widest solved
+clone gets the entered derate, the reference op's proven WOC gets 0%,
+levels between interpolate on arc of engagement (duty factor). Feed
+rescales with RPM so each clone's own chipload is held exactly — the
+force/deflection solve is unaffected. AVM applies YOUR published-chart
+derate at every level; it does not model heat.
+
+**Warning:** substantial RPM derates in tough material can drop a small
+machine into the weak end of its torque curve. The feature reduces heat;
+it does not add low-RPM torque. Know your spindle's torque band.
+
 ## Best use / known limits (v1)
 
 - **Best on:** wavy/organic floors with fine stepups — anywhere actual
